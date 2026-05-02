@@ -22,40 +22,51 @@ struct PitchTimelineView: View {
                 let windowStart = now - settings.timelineWindowSeconds
                 let visibleDetections = audioManager.detections.filter { $0.timestamp >= windowStart }
 
-                Canvas { context, canvasSize in
-                    let plotWidth = canvasSize.width - axisWidth
-                    let plotHeight = canvasSize.height
+                ZStack(alignment: .topLeading) {
+                    Canvas { context, canvasSize in
+                        let plotWidth = canvasSize.width - axisWidth
+                        let plotHeight = canvasSize.height
 
-                    // Calculate semitone offset from drag
-                    let totalSemitones = settings.highestMidiNote - settings.lowestMidiNote
-                    let pixelsPerSemitone = plotHeight / CGFloat(totalSemitones)
-                    let semitoneOffset = dragOffset / pixelsPerSemitone
+                        // Calculate semitone offset from drag
+                        let totalSemitones = settings.highestMidiNote - settings.lowestMidiNote
+                        let pixelsPerSemitone = plotHeight / CGFloat(totalSemitones)
+                        let semitoneOffset = dragOffset / pixelsPerSemitone
 
-                    let lowestNote = Double(settings.lowestMidiNote) - semitoneOffset
-                    let highestNote = Double(settings.highestMidiNote) - semitoneOffset
-                    let noteRange = highestNote - lowestNote
+                        let lowestNote = Double(settings.lowestMidiNote) - semitoneOffset
+                        let highestNote = Double(settings.highestMidiNote) - semitoneOffset
+                        let noteRange = highestNote - lowestNote
 
-                    drawGrid(
-                        context: &context,
-                        plotWidth: plotWidth,
-                        plotHeight: plotHeight,
-                        lowestNote: lowestNote,
-                        highestNote: highestNote,
-                        noteRange: noteRange
+                        drawGrid(
+                            context: &context,
+                            plotWidth: plotWidth,
+                            plotHeight: plotHeight,
+                            lowestNote: lowestNote,
+                            highestNote: highestNote,
+                            noteRange: noteRange
+                        )
+
+                        drawDots(
+                            context: &context,
+                            detections: visibleDetections,
+                            now: now,
+                            windowStart: windowStart,
+                            plotWidth: plotWidth,
+                            plotHeight: plotHeight,
+                            lowestNote: lowestNote,
+                            noteRange: noteRange
+                        )
+                    }
+                    .frame(width: size.width, height: size.height)
+
+                    NoteAxisOverlay(
+                        axisWidth: axisWidth,
+                        lowestNote: Double(settings.lowestMidiNote) - dragOffset / max(1, size.height / CGFloat(settings.highestMidiNote - settings.lowestMidiNote)),
+                        noteRange: Double(settings.highestMidiNote - settings.lowestMidiNote),
+                        onNoteOn: { audioManager.referencePlayer.noteOn(midi: $0) },
+                        onNoteOff: { audioManager.referencePlayer.noteOff(midi: $0) }
                     )
-
-                    drawDots(
-                        context: &context,
-                        detections: visibleDetections,
-                        now: now,
-                        windowStart: windowStart,
-                        plotWidth: plotWidth,
-                        plotHeight: plotHeight,
-                        lowestNote: lowestNote,
-                        noteRange: noteRange
-                    )
+                    .frame(width: axisWidth, height: size.height)
                 }
-                .frame(width: size.width, height: size.height)
             }
             .gesture(
                 DragGesture()

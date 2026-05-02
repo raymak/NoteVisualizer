@@ -87,6 +87,15 @@ class ReferencePitchPlayer {
         midiSampler?.stop(noteNumber: UInt8(midi), channel: 0)
     }
 
+    /// Stop every held note. Used to recover from gesture cancellation
+    /// (e.g. app backgrounding, scene becoming inactive).
+    func allNotesOff() {
+        let snapshot = heldNotes
+        for midi in snapshot {
+            noteOff(midi: midi)
+        }
+    }
+
     private func startOscillator(midi: Int, waveform: ReferenceSource) {
         let table = Self.table(for: waveform)
         let freq = AUValue(FrequencyUtils.frequencyFromMidiNote(Double(midi)))
