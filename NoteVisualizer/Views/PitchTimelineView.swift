@@ -58,6 +58,7 @@ struct PitchTimelineView: View {
                         axisWidth: axisWidth,
                         lowestNote: lowestNote(forHeight: size.height),
                         noteRange: Double(settings.highestMidiNote - settings.lowestMidiNote),
+                        heldNotes: audioManager.referencePlayer.heldNotes,
                         onNoteOn: { audioManager.referencePlayer.noteOn(midi: $0) },
                         onNoteOff: { audioManager.referencePlayer.noteOff(midi: $0) }
                     )
@@ -108,13 +109,26 @@ struct PitchTimelineView: View {
             path.addLine(to: CGPoint(x: axisWidth + plotWidth, y: y))
             context.stroke(path, with: .color(lineColor), lineWidth: lineWidth)
 
-            if isNatural || noteRange <= 24 {
+            let isHeld = audioManager.referencePlayer.heldNotes.contains(midi)
+
+            if isHeld {
+                var line = Path()
+                line.move(to: CGPoint(x: axisWidth, y: y))
+                line.addLine(to: CGPoint(x: axisWidth + plotWidth, y: y))
+                context.stroke(line,
+                               with: .color(Color.accentColor.opacity(0.5)),
+                               style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+            }
+
+            if isNatural || noteRange <= 24 || isHeld {
                 let octave = FrequencyUtils.octave(for: midi)
                 let label = "\(name)\(octave)"
                 let fontSize: CGFloat = noteRange > 30 ? 9 : 11
+                let labelColor: Color = isHeld ? .white : (isNatural ? .gray : .gray.opacity(0.6))
+                let labelWeight: Font.Weight = isHeld ? .bold : .regular
                 let text = Text(label)
-                    .font(.system(size: fontSize, design: .monospaced))
-                    .foregroundColor(isNatural ? .gray : .gray.opacity(0.6))
+                    .font(.system(size: fontSize, weight: labelWeight, design: .monospaced))
+                    .foregroundColor(labelColor)
                 context.draw(
                     context.resolve(text),
                     at: CGPoint(x: axisWidth - 6, y: y),

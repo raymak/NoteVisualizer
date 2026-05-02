@@ -6,6 +6,7 @@ struct NoteAxisOverlay: View {
     let axisWidth: CGFloat
     let lowestNote: Double
     let noteRange: Double
+    let heldNotes: Set<Int>
     let onNoteOn: (Int) -> Void
     let onNoteOff: (Int) -> Void
 
@@ -20,6 +21,7 @@ struct NoteAxisOverlay: View {
                 ForEach(startMidi...endMidi, id: \.self) { midi in
                     NoteAxisRow(midi: midi,
                                 height: pixelsPerSemitone,
+                                isHighlighted: heldNotes.contains(midi),
                                 onNoteOn: onNoteOn,
                                 onNoteOff: onNoteOff)
                         .frame(width: axisWidth, height: pixelsPerSemitone)
@@ -46,13 +48,15 @@ struct NoteAxisOverlay: View {
 private struct NoteAxisRow: View {
     let midi: Int
     let height: CGFloat
+    let isHighlighted: Bool
     let onNoteOn: (Int) -> Void
     let onNoteOff: (Int) -> Void
 
     @State private var isHeld = false
 
     var body: some View {
-        Color.clear
+        Rectangle()
+            .fill(isHighlighted ? Color.accentColor.opacity(0.18) : Color.clear)
             .contentShape(Rectangle())
             .highPriorityGesture(
                 DragGesture(minimumDistance: 0)
