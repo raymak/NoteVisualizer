@@ -132,6 +132,12 @@ class SoundFontStore {
                 try FileManager.default.removeItem(at: dest)
             }
             try FileManager.default.moveItem(at: tempURL, to: dest)
+            // If the user cancelled or deleted while the download was in flight,
+            // the state will no longer be .downloading. Drop the result.
+            guard case .downloading = states[id] else {
+                try? FileManager.default.removeItem(at: dest)
+                return
+            }
             states[id] = .downloaded
             persistDownloadedID(id)
         } catch {
@@ -141,6 +147,7 @@ class SoundFontStore {
     }
 
     func delete(id: String) {
+        cancel(id: id)
         let url = fileURL(for: id)
         try? FileManager.default.removeItem(at: url)
         states[id] = .notDownloaded
@@ -153,7 +160,9 @@ class SoundFontStore {
         // The current Downloader API doesn't expose per-id cancellation
         // because URLSessionDownloader returns one continuation per call.
         // For now we just flip state back; the in-flight task will complete
-        // and its result will be ignored because the state isn't .downloading.
+        // and its result is dropped by the state-check in download(id:from:).
+        // TODO(soundfont-cancel): migrate to a per-task cancellation token
+        // when Downloader gains richer cancellation semantics.
         if case .downloading = state(for: id) {
             states[id] = .notDownloaded
         }

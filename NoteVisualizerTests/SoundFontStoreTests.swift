@@ -113,6 +113,10 @@ final class SoundFontStoreTests: XCTestCase {
         store.delete(id: id)
         XCTAssertEqual(store.state(for: id), .notDownloaded)
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.fileURL(for: id).path))
+        XCTAssertFalse(
+            store.defaultsForTesting.array(forKey: "soundFontStore.downloadedIDs")?
+                .contains(where: { ($0 as? String) == id }) ?? false
+        )
     }
 }
 
