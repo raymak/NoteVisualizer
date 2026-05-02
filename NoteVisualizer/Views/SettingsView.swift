@@ -4,6 +4,35 @@ struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(AudioManager.self) private var audioManager
 
+    @State private var pendingSourceForDownload: String?
+
+    private var pickerBinding: Binding<ReferenceSource> {
+        Binding(
+            get: { settings.referenceSource },
+            set: { newValue in
+                if case .soundFont(let id) = newValue,
+                   case .notDownloaded = audioManager.soundFontStore.state(for: id) {
+                    // Don't actually switch yet; trigger download instead
+                    guard let entry = SoundFontCatalog.entry(id: id) else { return }
+                    pendingSourceForDownload = id
+                    Task { @MainActor in
+                        do {
+                            try await audioManager.soundFontStore.download(id: id, from: entry.url)
+                            if pendingSourceForDownload == id {
+                                settings.referenceSource = .soundFont(id: id)
+                                pendingSourceForDownload = nil
+                            }
+                        } catch {
+                            pendingSourceForDownload = nil
+                        }
+                    }
+                } else {
+                    settings.referenceSource = newValue
+                }
+            }
+        )
+    }
+
     @ViewBuilder
     private func soundFontPickerRow(entry: SoundFontEntry) -> some View {
         switch audioManager.soundFontStore.state(for: entry.id) {
@@ -33,7 +62,7 @@ struct SettingsView: View {
                 }
 
                 Section("Reference Pitch") {
-                    Picker("Source", selection: $settings.referenceSource) {
+                    Picker("Source", selection: pickerBinding) {
                         Text("Sine").tag(ReferenceSource.sine)
                         Text("Triangle").tag(ReferenceSource.triangle)
                         Text("Square").tag(ReferenceSource.square)
