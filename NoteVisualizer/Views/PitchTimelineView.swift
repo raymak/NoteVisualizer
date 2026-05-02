@@ -95,6 +95,9 @@ struct PitchTimelineView: View {
         let startMidi = Int(floor(lowestNote))
         let endMidi = Int(ceil(highestNote))
 
+        let held = audioManager.referencePlayer.heldNotes
+        let heldPitchClasses = Set(held.map { ((($0 % 12) + 12) % 12) })
+
         for midi in startMidi...endMidi {
             let y = yPosition(for: midi, lowestNote: lowestNote, noteRange: noteRange, height: plotHeight)
             guard y >= -20 && y <= plotHeight + 20 else { continue }
@@ -109,7 +112,9 @@ struct PitchTimelineView: View {
             path.addLine(to: CGPoint(x: axisWidth + plotWidth, y: y))
             context.stroke(path, with: .color(lineColor), lineWidth: lineWidth)
 
-            let isHeld = audioManager.referencePlayer.heldNotes.contains(midi)
+            let isHeld = held.contains(midi)
+            let pitchClass = ((midi % 12) + 12) % 12
+            let isOctaveOfHeld = !isHeld && heldPitchClasses.contains(pitchClass)
 
             if isHeld {
                 var line = Path()
@@ -118,13 +123,27 @@ struct PitchTimelineView: View {
                 context.stroke(line,
                                with: .color(Color.accentColor.opacity(0.5)),
                                style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+            } else if isOctaveOfHeld {
+                var line = Path()
+                line.move(to: CGPoint(x: axisWidth, y: y))
+                line.addLine(to: CGPoint(x: axisWidth + plotWidth, y: y))
+                context.stroke(line,
+                               with: .color(Color.orange.opacity(0.22)),
+                               style: StrokeStyle(lineWidth: 0.6, dash: [2, 4]))
             }
 
-            if isNatural || noteRange <= 24 || isHeld {
+            if isNatural || noteRange <= 24 || isHeld || isOctaveOfHeld {
                 let octave = FrequencyUtils.octave(for: midi)
                 let label = "\(name)\(octave)"
                 let fontSize: CGFloat = noteRange > 30 ? 9 : 11
-                let labelColor: Color = isHeld ? .white : (isNatural ? .gray : .gray.opacity(0.6))
+                let labelColor: Color
+                if isHeld {
+                    labelColor = .white
+                } else if isOctaveOfHeld {
+                    labelColor = Color.orange.opacity(0.85)
+                } else {
+                    labelColor = isNatural ? .gray : .gray.opacity(0.6)
+                }
                 let labelWeight: Font.Weight = isHeld ? .bold : .regular
                 let text = Text(label)
                     .font(.system(size: fontSize, weight: labelWeight, design: .monospaced))

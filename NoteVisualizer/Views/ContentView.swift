@@ -32,10 +32,41 @@ struct ContentView: View {
                     playbackSection
                 }
             }
+
+            if showSettings {
+                settingsOverlay
+            }
         }
-        .popover(isPresented: $showSettings) {
-            SettingsView()
-                .frame(minWidth: 320, minHeight: 400)
+        .animation(.easeInOut(duration: 0.18), value: showSettings)
+    }
+
+    private var settingsOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { closeSettings() }
+                .transition(.opacity)
+
+            SettingsView(onClose: { closeSettings() })
+                .frame(maxWidth: 460, maxHeight: 620)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(white: 0.10))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.5), radius: 30, y: 10)
+                .padding(20)
+                .transition(.scale(scale: 0.96).combined(with: .opacity))
+        }
+    }
+
+    private func closeSettings() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            showSettings = false
         }
     }
 
