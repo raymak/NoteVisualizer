@@ -15,6 +15,16 @@ struct NoteVisualizerApp: App {
                     audioManager.settings = settings
                     audioManager.start()
                 }
+                .task {
+                    audioManager.applyReferenceSettings(source: settings.referenceSource,
+                                                        volume: settings.referenceVolume)
+                }
+                .onChange(of: settings.referenceSource) { _, newValue in
+                    audioManager.applyReferenceSettings(source: newValue, volume: settings.referenceVolume)
+                }
+                .onChange(of: settings.referenceVolume) { _, newValue in
+                    audioManager.applyReferenceSettings(source: settings.referenceSource, volume: newValue)
+                }
         }
     }
 }

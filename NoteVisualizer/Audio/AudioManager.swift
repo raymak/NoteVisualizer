@@ -6,6 +6,7 @@ import SwiftUI
 import QuartzCore
 
 @Observable
+@MainActor
 class AudioManager {
     var settings: AppSettings?
     var detections: [PitchDetection] = []
@@ -25,6 +26,15 @@ class AudioManager {
 
     private var polyMixer: Mixer?
     private var polyphonicDetector: PolyphonicDetector?
+
+    let soundFontStore: SoundFontStore
+    var referencePlayer: ReferencePitchPlayer
+
+    init() {
+        let store = SoundFontStore()
+        self.soundFontStore = store
+        self.referencePlayer = ReferencePitchPlayer(soundFontStore: store)
+    }
 
     func start() {
         #if os(iOS)
@@ -78,9 +88,9 @@ class AudioManager {
             self?.polyphonicDetector?.processAudio(buffer: buffer)
         }
 
-        // Only route the polyMixer to output (single mono path)
+        // Combine the silenced mic-tap path with the reference-pitch output
         let silence = Fader(polyMixer!, gain: 0)
-        engine.output = silence
+        engine.output = Mixer([silence, referencePlayer.outputNode])
 
         do {
             try engine.start()
@@ -91,6 +101,11 @@ class AudioManager {
         } catch {
             print("Failed to start audio engine: \(error)")
         }
+    }
+
+    func applyReferenceSettings(source: ReferenceSource, volume: Double) {
+        referencePlayer.volume = volume
+        referencePlayer.setSource(source)
     }
 
     func stop() {
