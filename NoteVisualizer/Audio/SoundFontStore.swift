@@ -140,6 +140,25 @@ class SoundFontStore {
         }
     }
 
+    func delete(id: String) {
+        let url = fileURL(for: id)
+        try? FileManager.default.removeItem(at: url)
+        states[id] = .notDownloaded
+        var existing = (defaultsForTesting.array(forKey: Self.downloadedIDsKey) as? [String]) ?? []
+        existing.removeAll { $0 == id }
+        defaultsForTesting.set(existing, forKey: Self.downloadedIDsKey)
+    }
+
+    func cancel(id: String) {
+        // The current Downloader API doesn't expose per-id cancellation
+        // because URLSessionDownloader returns one continuation per call.
+        // For now we just flip state back; the in-flight task will complete
+        // and its result will be ignored because the state isn't .downloading.
+        if case .downloading = state(for: id) {
+            states[id] = .notDownloaded
+        }
+    }
+
     private func persistDownloadedID(_ id: String) {
         var existing = (defaultsForTesting.array(forKey: Self.downloadedIDsKey) as? [String]) ?? []
         if !existing.contains(id) { existing.append(id) }

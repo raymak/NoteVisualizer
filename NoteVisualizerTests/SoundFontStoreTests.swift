@@ -81,6 +81,39 @@ final class SoundFontStoreTests: XCTestCase {
         XCTAssertEqual(store.state(for: id), .downloaded)
         XCTAssertTrue(FileManager.default.fileExists(atPath: store.fileURL(for: id).path))
     }
+
+    func testDownloadFailureSetsFailedState() async {
+        let mock = MockDownloader()
+        mock.failure = NSError(domain: "test", code: 1,
+                               userInfo: [NSLocalizedDescriptionKey: "no network"])
+        store = SoundFontStore(directory: tempDir,
+                               defaults: UserDefaults(suiteName: UUID().uuidString)!,
+                               downloader: mock)
+        do {
+            try await store.download(id: "x", from: URL(string: "https://example.com")!)
+            XCTFail("should throw")
+        } catch {
+            // expected
+        }
+        if case .failed(let msg) = store.state(for: "x") {
+            XCTAssertTrue(msg.contains("no network"))
+        } else {
+            XCTFail("expected .failed, got \(store.state(for: "x"))")
+        }
+    }
+
+    func testDeleteRemovesFileAndState() throws {
+        let id = "to_delete"
+        try Data("content".utf8).write(to: store.fileURL(for: id))
+        store.markPersistedAsDownloadedForTesting(id: id)
+        // Re-init to pick up the file
+        store = SoundFontStore(directory: tempDir, defaults: store.defaultsForTesting)
+        XCTAssertEqual(store.state(for: id), .downloaded)
+
+        store.delete(id: id)
+        XCTAssertEqual(store.state(for: id), .notDownloaded)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.fileURL(for: id).path))
+    }
 }
 
 // MARK: - Mock downloader
