@@ -1,6 +1,7 @@
 import AudioKit
 import SoundpipeAudioKit
 import AVFoundation
+import CoreAudio
 
 @Observable
 @MainActor
@@ -16,8 +17,12 @@ class ReferencePitchPlayer {
     /// One oscillator per held MIDI note when in waveform mode.
     private var oscillators: [Int: Oscillator] = [:]
 
-    init() {
+    private var midiSampler: MIDISampler?
+    private var soundFontStore: SoundFontStore?
+
+    init(soundFontStore: SoundFontStore? = nil) {
         outputNode = Mixer()
+        self.soundFontStore = soundFontStore
     }
 
     func setSource(_ source: ReferenceSource) {
@@ -26,6 +31,33 @@ class ReferencePitchPlayer {
         heldNotes.removeAll()
         currentSource = source
         loadError = nil
+
+        // Tear down sampler if leaving SF2 mode
+        if let sampler = midiSampler, !source.isSoundFont {
+            outputNode.removeInput(sampler)
+            midiSampler = nil
+        }
+
+        // Load SF2 if entering SF2 mode
+        if case .soundFont(let id) = source,
+           let store = soundFontStore,
+           store.state(for: id) == .downloaded {
+            let sampler = MIDISampler()
+            do {
+                // Use URL-based load since the file is outside the app bundle
+                try sampler.loadMelodicSoundFont(url: store.fileURL(for: id), preset: 0)
+                outputNode.addInput(sampler)
+                midiSampler = sampler
+            } catch {
+                loadError = error.localizedDescription
+                // Fall back to sine
+                currentSource = .sine
+            }
+        } else if case .soundFont = source {
+            // Selected SF2 not actually downloaded — fall back to sine
+            loadError = "SoundFont not available"
+            currentSource = .sine
+        }
     }
 
     func noteOn(midi: Int) {
@@ -35,7 +67,9 @@ class ReferencePitchPlayer {
         case .sine, .triangle, .square, .sawtooth:
             startOscillator(midi: midi, waveform: currentSource)
         case .soundFont:
-            break  // implemented in next task
+            midiSampler?.play(noteNumber: UInt8(midi),
+                              velocity: UInt8(round(volume * 127)),
+                              channel: 0)
         }
     }
 
@@ -45,6 +79,7 @@ class ReferencePitchPlayer {
             osc.stop()
             outputNode.removeInput(osc)
         }
+        midiSampler?.stop(noteNumber: UInt8(midi), channel: 0)
     }
 
     private func startOscillator(midi: Int, waveform: ReferenceSource) {

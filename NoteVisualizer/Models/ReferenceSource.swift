@@ -31,3 +31,10 @@ enum ReferenceSource: Equatable, Hashable {
         }
     }
 }
+
+extension ReferenceSource {
+    var isSoundFont: Bool {
+        if case .soundFont = self { return true }
+        return false
+    }
+}
