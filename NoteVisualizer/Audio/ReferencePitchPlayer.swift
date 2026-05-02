@@ -1,7 +1,6 @@
 import AudioKit
 import SoundpipeAudioKit
 import AVFoundation
-import CoreAudio
 
 @Observable
 @MainActor
@@ -12,7 +11,12 @@ class ReferencePitchPlayer {
     let outputNode: Mixer
 
     private var currentSource: ReferenceSource = .sine
-    var volume: Double = 0.5
+    var volume: Double = 0.5 {
+        didSet {
+            let clamped = min(max(volume, 0), 1)
+            if clamped != volume { volume = clamped }
+        }
+    }
 
     /// One oscillator per held MIDI note when in waveform mode.
     private var oscillators: [Int: Oscillator] = [:]
