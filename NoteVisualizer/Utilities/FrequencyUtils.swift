@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 enum FrequencyUtils {
@@ -54,5 +55,17 @@ enum FrequencyUtils {
     static func midiNote(name: String, octave: Int) -> Int {
         guard let index = noteNames.firstIndex(of: name) else { return 60 }
         return (octave + 1) * 12 + index
+    }
+
+    /// Inverse of the yPosition computation used by PitchTimelineView's Canvas.
+    /// Returns the rounded MIDI note for a y coordinate within the plot.
+    static func midiNote(forY y: CGFloat,
+                         lowestNote: Double,
+                         noteRange: Double,
+                         height: CGFloat) -> Int {
+        guard height > 0 else { return Int(lowestNote.rounded()) }
+        let normalized = 1.0 - Double(y / height)
+        let exact = lowestNote + normalized * noteRange
+        return Int(exact.rounded())
     }
 }
