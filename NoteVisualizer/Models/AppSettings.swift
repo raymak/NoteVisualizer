@@ -17,6 +17,12 @@ class AppSettings {
     var colorMode: ColorMode {
         didSet { UserDefaults.standard.set(colorMode.rawValue, forKey: "colorMode") }
     }
+    var referenceSource: ReferenceSource {
+        didSet { UserDefaults.standard.set(referenceSource.encoded, forKey: "referenceSource") }
+    }
+    var referenceVolume: Double {
+        didSet { UserDefaults.standard.set(referenceVolume, forKey: "referenceVolume") }
+    }
 
     var lowestMidiNote: Int {
         FrequencyUtils.midiNote(name: "C", octave: lowestOctave)
@@ -34,6 +40,9 @@ class AppSettings {
         self.visibleOctaves = UserDefaults.standard.object(forKey: "visibleOctaves") as? Int ?? 2
         let color = UserDefaults.standard.string(forKey: "colorMode") ?? ColorMode.volume.rawValue
         self.colorMode = ColorMode(rawValue: color) ?? .volume
+        let sourceEncoded = UserDefaults.standard.string(forKey: "referenceSource") ?? ReferenceSource.sine.encoded
+        self.referenceSource = ReferenceSource(encoded: sourceEncoded) ?? .sine
+        self.referenceVolume = UserDefaults.standard.object(forKey: "referenceVolume") as? Double ?? 0.5
     }
 
     enum DetectionMode: String, CaseIterable {
