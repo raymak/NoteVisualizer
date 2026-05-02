@@ -37,3 +37,51 @@ targets:
       path: NoteVisualizer/NoteVisualizer.entitlements
       properties:
         com.apple.security.device.audio-input: true
+
+  NoteVisualizerTests_iOS:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - NoteVisualizerTests
+    dependencies:
+      - target: NoteVisualizer_iOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/NoteVisualizer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoteVisualizer
+
+  NoteVisualizerTests_macOS:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - NoteVisualizerTests
+    dependencies:
+      - target: NoteVisualizer_macOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/NoteVisualizer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoteVisualizer
+
+schemes:
+  NoteVisualizer_iOS:
+    build:
+      targets:
+        NoteVisualizer_iOS: all
+        NoteVisualizerTests_iOS: [test]
+    test:
+      targets:
+        - NoteVisualizerTests_iOS
+    run:
+      config: Debug
+  NoteVisualizer_macOS:
+    build:
+      targets:
+        NoteVisualizer_macOS: all
+        NoteVisualizerTests_macOS: [test]
+    test:
+      targets:
+        - NoteVisualizerTests_macOS
+    run:
+      config: Debug
