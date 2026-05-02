@@ -50,6 +50,8 @@ struct SettingsView: View {
                     }
                 }
 
+                SoundFontSettingsSection()
+
                 Section("Display Range") {
                     Stepper("Lowest Octave: \(settings.lowestOctave)", value: $settings.lowestOctave, in: 1...6)
 
