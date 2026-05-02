@@ -6,8 +6,11 @@ struct PitchTimelineView: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var lastDragOffset: CGFloat = 0
+    @State private var pinchScale: CGFloat = 1.0
 
     private let axisWidth: CGFloat = 40
+    private let minSemitones: Double = 12   // 1 octave
+    private let maxSemitones: Double = 60   // 5 octaves
     private let dotRadius: CGFloat = 3.0
 
     // Polyphonic voice colors
@@ -22,13 +25,15 @@ struct PitchTimelineView: View {
                 let windowStart = now - settings.timelineWindowSeconds
                 let visibleDetections = audioManager.detections.filter { $0.timestamp >= windowStart }
 
+                let effectiveSemitones = effectiveSemitones()
+
                 ZStack(alignment: .topLeading) {
                     Canvas { context, canvasSize in
                         let plotWidth = canvasSize.width - axisWidth
                         let plotHeight = canvasSize.height
 
-                        let lowestNote = lowestNote(forHeight: plotHeight)
-                        let noteRange = Double(settings.highestMidiNote - settings.lowestMidiNote)
+                        let lowestNote = lowestNote(forHeight: plotHeight, effectiveSemitones: effectiveSemitones)
+                        let noteRange = effectiveSemitones
                         let highestNote = lowestNote + noteRange
 
                         drawGrid(
@@ -56,8 +61,8 @@ struct PitchTimelineView: View {
 
                     NoteAxisOverlay(
                         axisWidth: axisWidth,
-                        lowestNote: lowestNote(forHeight: size.height),
-                        noteRange: Double(settings.highestMidiNote - settings.lowestMidiNote),
+                        lowestNote: lowestNote(forHeight: size.height, effectiveSemitones: effectiveSemitones),
+                        noteRange: effectiveSemitones,
                         heldNotes: audioManager.referencePlayer.heldNotes,
                         onNoteOn: { audioManager.referencePlayer.noteOn(midi: $0) },
                         onNoteOff: { audioManager.referencePlayer.noteOff(midi: $0) }
@@ -76,9 +81,15 @@ struct PitchTimelineView: View {
             )
             .gesture(
                 MagnificationGesture()
+                    .onChanged { scale in
+                        pinchScale = scale
+                    }
                     .onEnded { scale in
-                        let newOctaves = max(1, min(5, Int(round(Double(settings.visibleOctaves) / scale))))
+                        let baseSemitones = Double(settings.highestMidiNote - settings.lowestMidiNote)
+                        let target = baseSemitones / Double(scale)
+                        let newOctaves = max(1, min(5, Int(round(target / 12))))
                         settings.visibleOctaves = newOctaves
+                        pinchScale = 1.0
                     }
             )
         }
@@ -233,10 +244,17 @@ struct PitchTimelineView: View {
         return height - CGFloat(normalized) * height
     }
 
-    private func lowestNote(forHeight height: CGFloat) -> Double {
-        let totalSemitones = CGFloat(settings.highestMidiNote - settings.lowestMidiNote)
-        let pixelsPerSemitone = max(1, height / totalSemitones)
-        return Double(settings.lowestMidiNote) - dragOffset / pixelsPerSemitone
+    private func lowestNote(forHeight height: CGFloat, effectiveSemitones: Double) -> Double {
+        let pixelsPerSemitone = max(1, height / CGFloat(effectiveSemitones))
+        let baseSemitones = Double(settings.highestMidiNote - settings.lowestMidiNote)
+        let centerCorrection = (baseSemitones - effectiveSemitones) / 2.0
+        return Double(settings.lowestMidiNote) - dragOffset / pixelsPerSemitone + centerCorrection
+    }
+
+    private func effectiveSemitones() -> Double {
+        let baseSemitones = Double(settings.highestMidiNote - settings.lowestMidiNote)
+        let target = baseSemitones / Double(pinchScale)
+        return min(maxSemitones, max(minSemitones, target))
     }
 
     private func dotColor(amplitude: Double, voiceIndex: Int) -> Color {
