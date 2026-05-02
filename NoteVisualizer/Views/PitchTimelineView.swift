@@ -70,7 +70,7 @@ struct PitchTimelineView: View {
                     .frame(width: axisWidth, height: size.height)
                 }
             }
-            .gesture(
+            .simultaneousGesture(
                 DragGesture()
                     .onChanged { value in
                         dragOffset = lastDragOffset + value.translation.height
@@ -79,7 +79,7 @@ struct PitchTimelineView: View {
                         lastDragOffset = dragOffset
                     }
             )
-            .gesture(
+            .simultaneousGesture(
                 MagnificationGesture()
                     .onChanged { scale in
                         pinchScale = scale
@@ -246,9 +246,7 @@ struct PitchTimelineView: View {
 
     private func lowestNote(forHeight height: CGFloat, effectiveSemitones: Double) -> Double {
         let pixelsPerSemitone = max(1, height / CGFloat(effectiveSemitones))
-        let baseSemitones = Double(settings.highestMidiNote - settings.lowestMidiNote)
-        let centerCorrection = (baseSemitones - effectiveSemitones) / 2.0
-        return Double(settings.lowestMidiNote) - dragOffset / pixelsPerSemitone + centerCorrection
+        return Double(settings.lowestMidiNote) - dragOffset / pixelsPerSemitone
     }
 
     private func effectiveSemitones() -> Double {
