@@ -27,14 +27,9 @@ struct PitchTimelineView: View {
                         let plotWidth = canvasSize.width - axisWidth
                         let plotHeight = canvasSize.height
 
-                        // Calculate semitone offset from drag
-                        let totalSemitones = settings.highestMidiNote - settings.lowestMidiNote
-                        let pixelsPerSemitone = plotHeight / CGFloat(totalSemitones)
-                        let semitoneOffset = dragOffset / pixelsPerSemitone
-
-                        let lowestNote = Double(settings.lowestMidiNote) - semitoneOffset
-                        let highestNote = Double(settings.highestMidiNote) - semitoneOffset
-                        let noteRange = highestNote - lowestNote
+                        let lowestNote = lowestNote(forHeight: plotHeight)
+                        let noteRange = Double(settings.highestMidiNote - settings.lowestMidiNote)
+                        let highestNote = lowestNote + noteRange
 
                         drawGrid(
                             context: &context,
@@ -57,10 +52,11 @@ struct PitchTimelineView: View {
                         )
                     }
                     .frame(width: size.width, height: size.height)
+                    .allowsHitTesting(false)
 
                     NoteAxisOverlay(
                         axisWidth: axisWidth,
-                        lowestNote: Double(settings.lowestMidiNote) - dragOffset / max(1, size.height / CGFloat(settings.highestMidiNote - settings.lowestMidiNote)),
+                        lowestNote: lowestNote(forHeight: size.height),
                         noteRange: Double(settings.highestMidiNote - settings.lowestMidiNote),
                         onNoteOn: { audioManager.referencePlayer.noteOn(midi: $0) },
                         onNoteOff: { audioManager.referencePlayer.noteOff(midi: $0) }
@@ -202,6 +198,12 @@ struct PitchTimelineView: View {
         let notePosition = Double(midiNote) - lowestNote + centsOffset / 100.0
         let normalized = notePosition / noteRange
         return height - CGFloat(normalized) * height
+    }
+
+    private func lowestNote(forHeight height: CGFloat) -> Double {
+        let totalSemitones = CGFloat(settings.highestMidiNote - settings.lowestMidiNote)
+        let pixelsPerSemitone = max(1, height / totalSemitones)
+        return Double(settings.lowestMidiNote) - dragOffset / pixelsPerSemitone
     }
 
     private func dotColor(amplitude: Double, voiceIndex: Int) -> Color {
