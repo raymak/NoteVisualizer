@@ -49,9 +49,23 @@ private struct NoteAxisRow: View {
     let onNoteOn: (Int) -> Void
     let onNoteOff: (Int) -> Void
 
+    @State private var isHeld = false
+
     var body: some View {
         Color.clear
             .contentShape(Rectangle())
-            // Gestures wired in the next task.
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !isHeld else { return }
+                        isHeld = true
+                        onNoteOn(midi)
+                    }
+                    .onEnded { _ in
+                        guard isHeld else { return }
+                        isHeld = false
+                        onNoteOff(midi)
+                    }
+            )
     }
 }
