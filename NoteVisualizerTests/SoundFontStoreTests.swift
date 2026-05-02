@@ -56,4 +56,48 @@ final class SoundFontStoreTests: XCTestCase {
         // Persistence should have been cleaned up too
         XCTAssertFalse(defaults.array(forKey: "soundFontStore.downloadedIDs")?.contains(where: { ($0 as? String) == id }) ?? false)
     }
+
+    func testDownloadHappyPath() async throws {
+        // Mock downloader writes a fake file and returns its URL on demand
+        let mock = MockDownloader()
+        store = SoundFontStore(directory: tempDir,
+                               defaults: UserDefaults(suiteName: UUID().uuidString)!,
+                               downloader: mock)
+
+        let id = "test_font"
+        let url = URL(string: "https://example.com/test.sf2")!
+
+        // Schedule progress callbacks then completion
+        mock.scheduledProgress = [0.25, 0.5, 0.75, 1.0]
+
+        let exp = expectation(description: "download complete")
+        Task { @MainActor in
+            try await store.download(id: id, from: url)
+            exp.fulfill()
+        }
+
+        await fulfillment(of: [exp], timeout: 2)
+
+        XCTAssertEqual(store.state(for: id), .downloaded)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.fileURL(for: id).path))
+    }
+}
+
+// MARK: - Mock downloader
+
+final class MockDownloader: Downloader, @unchecked Sendable {
+    var scheduledProgress: [Double] = []
+    var failure: Error?
+
+    func download(from url: URL,
+                  onProgress: @escaping (Double) -> Void) async throws -> URL {
+        if let failure = failure { throw failure }
+        for p in scheduledProgress {
+            await MainActor.run { onProgress(p) }
+        }
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".sf2")
+        try Data("fake content".utf8).write(to: temp)
+        return temp
+    }
 }
