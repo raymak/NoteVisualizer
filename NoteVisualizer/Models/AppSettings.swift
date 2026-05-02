@@ -21,7 +21,14 @@ class AppSettings {
         didSet { UserDefaults.standard.set(referenceSource.encoded, forKey: "referenceSource") }
     }
     var referenceVolume: Double {
-        didSet { UserDefaults.standard.set(referenceVolume, forKey: "referenceVolume") }
+        didSet {
+            let clamped = min(max(referenceVolume, 0), 1)
+            if clamped != referenceVolume {
+                referenceVolume = clamped
+                return
+            }
+            UserDefaults.standard.set(referenceVolume, forKey: "referenceVolume")
+        }
     }
 
     var lowestMidiNote: Int {
@@ -42,7 +49,8 @@ class AppSettings {
         self.colorMode = ColorMode(rawValue: color) ?? .volume
         let sourceEncoded = UserDefaults.standard.string(forKey: "referenceSource") ?? ReferenceSource.sine.encoded
         self.referenceSource = ReferenceSource(encoded: sourceEncoded) ?? .sine
-        self.referenceVolume = UserDefaults.standard.object(forKey: "referenceVolume") as? Double ?? 0.5
+        let rawVolume = UserDefaults.standard.object(forKey: "referenceVolume") as? Double ?? 0.5
+        self.referenceVolume = min(max(rawVolume, 0), 1)
     }
 
     enum DetectionMode: String, CaseIterable {
