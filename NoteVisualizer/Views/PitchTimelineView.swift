@@ -59,6 +59,34 @@ struct PitchTimelineView: View {
                     .frame(width: size.width, height: size.height)
                     .allowsHitTesting(false)
 
+                    // Plot-area gesture layer: pan + zoom live here, NOT on the axis strip.
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .frame(width: max(0, size.width - axisWidth), height: size.height)
+                        .offset(x: axisWidth)
+                        .gesture(
+                            SimultaneousGesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        dragOffset = lastDragOffset + value.translation.height
+                                    }
+                                    .onEnded { _ in
+                                        lastDragOffset = dragOffset
+                                    },
+                                MagnificationGesture()
+                                    .onChanged { scale in
+                                        pinchScale = scale
+                                    }
+                                    .onEnded { scale in
+                                        let baseSemitones = Double(settings.highestMidiNote - settings.lowestMidiNote)
+                                        let target = baseSemitones / Double(scale)
+                                        let newOctaves = max(1, min(5, Int(round(target / 12))))
+                                        settings.visibleOctaves = newOctaves
+                                        pinchScale = 1.0
+                                    }
+                            )
+                        )
+
                     NoteAxisOverlay(
                         axisWidth: axisWidth,
                         lowestNote: lowestNote(forHeight: size.height, effectiveSemitones: effectiveSemitones),
@@ -70,28 +98,6 @@ struct PitchTimelineView: View {
                     .frame(width: axisWidth, height: size.height)
                 }
             }
-            .simultaneousGesture(
-                DragGesture()
-                    .onChanged { value in
-                        dragOffset = lastDragOffset + value.translation.height
-                    }
-                    .onEnded { value in
-                        lastDragOffset = dragOffset
-                    }
-            )
-            .simultaneousGesture(
-                MagnificationGesture()
-                    .onChanged { scale in
-                        pinchScale = scale
-                    }
-                    .onEnded { scale in
-                        let baseSemitones = Double(settings.highestMidiNote - settings.lowestMidiNote)
-                        let target = baseSemitones / Double(scale)
-                        let newOctaves = max(1, min(5, Int(round(target / 12))))
-                        settings.visibleOctaves = newOctaves
-                        pinchScale = 1.0
-                    }
-            )
         }
     }
 
