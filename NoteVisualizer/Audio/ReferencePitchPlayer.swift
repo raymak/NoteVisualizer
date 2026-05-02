@@ -30,6 +30,7 @@ class ReferencePitchPlayer {
     }
 
     func setSource(_ source: ReferenceSource) {
+        guard source != currentSource else { return }
         let toStop = heldNotes
         for midi in toStop { noteOff(midi: midi) }
         heldNotes.removeAll()

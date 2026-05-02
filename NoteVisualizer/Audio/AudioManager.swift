@@ -28,7 +28,7 @@ class AudioManager {
     private var polyphonicDetector: PolyphonicDetector?
 
     let soundFontStore: SoundFontStore
-    var referencePlayer: ReferencePitchPlayer
+    let referencePlayer: ReferencePitchPlayer
 
     init() {
         let store = SoundFontStore()
