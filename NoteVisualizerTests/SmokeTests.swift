@@ -3,6 +3,6 @@ import XCTest
 
 final class SmokeTests: XCTestCase {
     func testCanInstantiateAppSettings() {
-        _ = AppSettings()
+        XCTAssertNotNil(AppSettings())
     }
 }

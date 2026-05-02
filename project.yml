@@ -70,18 +70,27 @@ schemes:
       targets:
         NoteVisualizer_iOS: all
         NoteVisualizerTests_iOS: [test]
+    run:
+      config: Debug
     test:
       targets:
         - NoteVisualizerTests_iOS
-    run:
-      config: Debug
+    archive:
+      config: Release
+    profile:
+      config: Release
   NoteVisualizer_macOS:
     build:
       targets:
         NoteVisualizer_macOS: all
         NoteVisualizerTests_macOS: [test]
+    run:
+      config: Debug
     test:
       targets:
         - NoteVisualizerTests_macOS
-    run:
-      config: Debug
+    archive:
+      config: Release
+    profile:
+      config: Release
+
