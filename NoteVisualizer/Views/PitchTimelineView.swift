@@ -7,7 +7,7 @@ struct PitchTimelineView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var lastDragOffset: CGFloat = 0
 
-    private let axisWidth: CGFloat = 50
+    private let axisWidth: CGFloat = 40
     private let dotRadius: CGFloat = 3.0
 
     // Polyphonic voice colors

@@ -79,23 +79,23 @@ struct ContentView: View {
 
     private var visualizeSection: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 12) {
                 ModeToggleView()
-
-                Spacer()
 
                 recordButton
 
-                Spacer()
-
                 statusIndicator
+
+                Spacer()
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
 
             PitchTimelineView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.bottom, 8)
         }
+        .frame(maxHeight: .infinity)
     }
 
     // MARK: - Playback Section
@@ -134,33 +134,26 @@ struct ContentView: View {
             }
         } label: {
             HStack(spacing: 8) {
+                Circle()
+                    .fill(audioManager.isRecording ? Color.red : Color.red.opacity(0.6))
+                    .frame(width: 10, height: 10)
+
                 ZStack {
-                    Circle()
-                        .fill(audioManager.isRecording ? Color.red : Color.red.opacity(0.6))
-                        .frame(width: 18, height: 18)
-
-                    if audioManager.isRecording {
-                        Circle()
-                            .stroke(Color.red.opacity(0.4), lineWidth: 2)
-                            .frame(width: 26, height: 26)
-                            .scaleEffect(audioManager.isRecording ? 1.3 : 1)
-                            .opacity(audioManager.isRecording ? 0 : 1)
-                            .animation(.easeOut(duration: 1.0).repeatForever(autoreverses: false), value: audioManager.isRecording)
-                    }
+                    Text("Stop").hidden()
+                    Text(audioManager.isRecording ? "Stop" : "Rec")
+                        .foregroundStyle(audioManager.isRecording ? .red : .white)
                 }
-                .frame(width: 30, height: 30)
-
-                Text(audioManager.isRecording ? "Stop Recording" : "Record")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(audioManager.isRecording ? .red : .white)
+                .font(.caption.weight(.semibold))
+                .fixedSize()
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(audioManager.isRecording ? Color.red.opacity(0.15) : Color.white.opacity(0.1))
                     .stroke(audioManager.isRecording ? Color.red.opacity(0.4) : Color.white.opacity(0.15), lineWidth: 1)
             )
+            .fixedSize()
         }
         .buttonStyle(.plain)
     }
@@ -170,9 +163,13 @@ struct ContentView: View {
             Circle()
                 .fill(audioManager.isRunning ? Color.green : Color.red)
                 .frame(width: 8, height: 8)
-            Text(audioManager.isRunning ? "Listening" : "Stopped")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            ZStack {
+                Text("Listening").hidden()
+                Text(audioManager.isRunning ? "Listening" : "Stopped")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .fixedSize()
         }
     }
 
