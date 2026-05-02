@@ -29,6 +29,7 @@ class ReferencePitchPlayer {
     }
 
     func noteOn(midi: Int) {
+        guard !heldNotes.contains(midi) else { return }
         heldNotes.insert(midi)
         switch currentSource {
         case .sine, .triangle, .square, .sawtooth:
