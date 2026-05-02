@@ -2,6 +2,21 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(AudioManager.self) private var audioManager
+
+    @ViewBuilder
+    private func soundFontPickerRow(entry: SoundFontEntry) -> some View {
+        switch audioManager.soundFontStore.state(for: entry.id) {
+        case .downloaded:
+            Text(entry.displayName)
+        case .downloading(let p):
+            Text("\(entry.displayName) — \(Int(p * 100))%")
+        case .notDownloaded:
+            Text("\(entry.displayName) (tap to download)")
+        case .failed:
+            Text("\(entry.displayName) (download failed)")
+        }
+    }
 
     var body: some View {
         @Bindable var settings = settings
@@ -15,6 +30,24 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section("Reference Pitch") {
+                    Picker("Source", selection: $settings.referenceSource) {
+                        Text("Sine").tag(ReferenceSource.sine)
+                        Text("Triangle").tag(ReferenceSource.triangle)
+                        Text("Square").tag(ReferenceSource.square)
+                        Text("Sawtooth").tag(ReferenceSource.sawtooth)
+                        ForEach(SoundFontCatalog.entries) { entry in
+                            soundFontPickerRow(entry: entry)
+                                .tag(ReferenceSource.soundFont(id: entry.id))
+                        }
+                    }
+
+                    VStack(alignment: .leading) {
+                        Text("Volume: \(Int(settings.referenceVolume * 100))%")
+                        Slider(value: $settings.referenceVolume, in: 0...1)
+                    }
                 }
 
                 Section("Display Range") {
