@@ -27,6 +27,7 @@ struct SettingsView: View {
                         }
                     }
                 } else {
+                    pendingSourceForDownload = nil
                     settings.referenceSource = newValue
                 }
             }
