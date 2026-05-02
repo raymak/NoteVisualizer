@@ -47,18 +47,31 @@
 Edit `project.yml`. Add a new target under `targets:` after the existing `NoteVisualizer` target:
 
 ```yaml
-  NoteVisualizerTests:
+  NoteVisualizerTests_iOS:
     type: bundle.unit-test
-    platform: [iOS, macOS]
-    sources:
-      - NoteVisualizerTests
+    platform: iOS
+    sources: [NoteVisualizerTests]
     dependencies:
-      - target: NoteVisualizer
+      - target: NoteVisualizer_iOS
     settings:
       base:
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/NoteVisualizer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoteVisualizer
+  NoteVisualizerTests_macOS:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [NoteVisualizerTests]
+    dependencies:
+      - target: NoteVisualizer_macOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
         BUNDLE_LOADER: $(TEST_HOST)
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/NoteVisualizer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoteVisualizer
 ```
+
+> **Note:** Multi-platform `[iOS, macOS]` targets are split by XcodeGen into platform-suffixed names (`NoteVisualizer_iOS`/`NoteVisualizer_macOS`), so the test target needs to be split similarly. An explicit `schemes:` block is also required to wire test targets into the schemes (see commit `4bf7e62`/`46b42bf` for the final shape). Subsequent tasks reference test targets as `NoteVisualizerTests_iOS` accordingly.
 
 - [ ] **Step 2: Create the test directory with a smoke test**
 
@@ -82,7 +95,7 @@ Expected: `Generated project successfully`
 
 - [ ] **Step 4: Run the smoke test**
 
-Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SmokeTests/testCanInstantiateAppSettings`
+Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SmokeTests/testCanInstantiateAppSettings`
 Expected: TEST SUCCEEDED
 
 - [ ] **Step 5: Commit**
@@ -152,7 +165,7 @@ final class ReferenceSourceTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/ReferenceSourceTests`
+Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/ReferenceSourceTests`
 Expected: BUILD FAILED (`Cannot find 'ReferenceSource' in scope`)
 
 - [ ] **Step 3: Implement ReferenceSource**
@@ -199,7 +212,7 @@ enum ReferenceSource: Equatable, Hashable {
 
 ```bash
 xcodegen generate
-xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/ReferenceSourceTests
+xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/ReferenceSourceTests
 ```
 Expected: TEST SUCCEEDED, 6 passed
 
@@ -280,7 +293,7 @@ final class NoteAxisMathTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/NoteAxisMathTests`
+Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/NoteAxisMathTests`
 Expected: BUILD FAILED (`No member 'midiNote(forY:...)' in 'FrequencyUtils'`)
 
 - [ ] **Step 3: Add the helper**
@@ -305,7 +318,7 @@ Append to `NoteVisualizer/Utilities/FrequencyUtils.swift`, inside the `enum Freq
 
 ```bash
 xcodegen generate
-xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/NoteAxisMathTests
+xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/NoteAxisMathTests
 ```
 Expected: TEST SUCCEEDED, 4 passed
 
@@ -469,7 +482,7 @@ final class SoundFontStoreTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SoundFontStoreTests`
+Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SoundFontStoreTests`
 Expected: BUILD FAILED (`Cannot find 'SoundFontStore' in scope`)
 
 - [ ] **Step 3: Implement the skeleton**
@@ -549,7 +562,7 @@ class SoundFontStore {
 
 ```bash
 xcodegen generate
-xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SoundFontStoreTests
+xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SoundFontStoreTests
 ```
 Expected: TEST SUCCEEDED, 4 passed
 
@@ -623,7 +636,7 @@ final class MockDownloader: Downloader, @unchecked Sendable {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SoundFontStoreTests/testDownloadHappyPath`
+Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SoundFontStoreTests/testDownloadHappyPath`
 Expected: BUILD FAILED (`No type named 'Downloader'`, `No method 'download(id:from:)'`)
 
 - [ ] **Step 3: Add Downloader protocol and download method**
@@ -803,7 +816,7 @@ class SoundFontStore {
 
 ```bash
 xcodegen generate
-xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SoundFontStoreTests
+xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SoundFontStoreTests
 ```
 Expected: TEST SUCCEEDED, 5 passed
 
@@ -865,7 +878,7 @@ Append inside `SoundFontStoreTests` (before the closing `}`):
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SoundFontStoreTests/testDeleteRemovesFileAndState`
+Run: `xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SoundFontStoreTests/testDeleteRemovesFileAndState`
 Expected: BUILD FAILED (`No method 'delete'`)
 
 - [ ] **Step 3: Add `delete(id:)` and (best-effort) `cancel(id:)`**
@@ -900,7 +913,7 @@ Also update the progress callback inside `download(id:from:)` so that cancelled 
 
 ```bash
 xcodegen generate
-xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:NoteVisualizerTests/SoundFontStoreTests
+xcodebuild test -project NoteVisualizer.xcodeproj -scheme NoteVisualizer_iOS -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:NoteVisualizerTests_iOS/SoundFontStoreTests
 ```
 Expected: TEST SUCCEEDED, 7 passed
 
@@ -2001,7 +2014,7 @@ Run through the manual test plan from the spec. If any issue surfaces, file it a
 xcodegen generate
 open NoteVisualizer.xcodeproj
 ```
-Then run on iPhone 15 simulator from Xcode.
+Then run on iPhone 16 simulator from Xcode.
 
 - [ ] **Step 2: Execute the test plan**
 
